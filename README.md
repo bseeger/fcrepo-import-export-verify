@@ -2,9 +2,9 @@
 Compare two sets of Fedora resources (in live fcrepo or serialized to disk) and verify
 their sameness.
 
-This tool is used to test an import or export from/to a [Fedora4](http://github.com/fcrepo4/fcrepo4) server.
-To learn how to export or import data from/to a Fedora4 system, please visit
-the [Fedora4 Import Export Utility](http://github.com/fcrepo4-labs/fcrepo-import-export).
+This tool is used to test an import or export from/to a [Fedora](http://github.com/fcrepo4/fcrepo4) server.
+To learn how to export or import data from/to a Fedora system, please visit
+the [Fedora Import Export Utility](http://github.com/fcrepo4-labs/fcrepo-import-export).
 
 ## Installation
 This tool requires Python. To install it with its dependencies, navigate to the location on
