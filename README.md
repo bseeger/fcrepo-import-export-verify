@@ -30,9 +30,14 @@ process, and is the only required argument. Optional additional arguments for th
 described below.
 
 ### Logging
-To have the tool output information about each resource examined include the `-v` flag and
-set the loglevel to `INFO`.  Information about each resource will then either be sent to
-standard out or written to an output file, if specified.
+Information about errors or discrepancies found will be output to the log file and to the
+screen.  To have the tool output information about each resource being examined include the `-v` flag.
+Information about each resource being looked at will then be sent to standard out.
+
+The default log level for the log file is `WARN` and the default log file is `./verify_output.txt`
+
+A CSV file can be created.  It will contain information about each resource and how it compared
+to it's counterpart in the other system.
 
 ```
 usage: verify.py [-h] [-u USER] [-c CSV] [-l LOG] [--loglevel LOGLEVEL] [-v]
@@ -51,6 +56,6 @@ optional arguments:
   -l LOG, --log LOG     Path to log file (to store details of verification
                         run).
   --loglevel LOGLEVEL   Level of information to output (INFO, WARN, DEBUG,
-                        ERROR) Default: WARN
+                        ERROR)
   -v, --verbose         Show detailed info for each resource checked
 ```

@@ -5,6 +5,7 @@ from __future__ import print_function
 
 import argparse
 from csv import DictWriter
+from datetime import datetime
 from hashlib import sha1
 import logging
 from os.path import basename, isfile
@@ -81,9 +82,9 @@ def get_directory_contents(localpath):
 class Config():
     '''Object representing the options from import/export config and
        command-line arguments.'''
-    def __init__(self, configfile, auth):
-        print('''Loading configuration options from import/export config file
-                \'{0}\'...'''.format(configfile))
+    def __init__(self, configfile, auth, logger):
+        logger.info('\nLoading configuration options from import/export config file: ')
+        logger.info('  \'{0}\''.format(configfile))
         self.auth = auth
         with open(configfile, 'r') as f:
             opts = [line for line in f.read().split('\n')]
@@ -213,6 +214,9 @@ class Resource():
             self.type = 'binary'
             self.relpath = self.origpath[len(config.bin):]
             if not self.relpath.endswith('.binary'):
+                print('ERROR: Binary resource ' +
+                      '{0} lacks expected extension!'.format(self.origpath)
+                      )
                 self.logger.error('ERROR: Binary resource ' +
                       '{0} lacks expected extension!'.format(self.origpath)
                       )
@@ -226,6 +230,9 @@ class Resource():
             self.type = 'rdf'
             self.relpath = self.origpath[len(config.desc):]
             if not self.relpath.endswith(config.ext):
+                print('ERROR: RDF resource ' +
+                      'lacks expected extension!'.format(self.origpath)
+                      )
                 self.logger.error('ERROR: RDF resource ' +
                       'lacks expected extension!'.format(self.origpath)
                       )
@@ -234,6 +241,7 @@ class Resource():
                                        format=config.lang
                                        )
         else:
+            print("ERROR reading resource at {0}.".format(self.origpath))
             self.logger.error("ERROR reading resource at {0}.".format(self.origpath))
             sys.exit(1)
 
@@ -282,7 +290,7 @@ def main():
                         verification run).''',
                         action='store',
                         required=False,
-                        default=None
+                        default='verify_output.txt',
                         )
 
     parser.add_argument('--loglevel',
@@ -314,33 +322,26 @@ def main():
         writer = DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
-    # set up logger to stdout
+    # set up logging to a file
     logger = logging.getLogger('output')
     level = getattr(logging, args.loglevel.upper(), None)
     logger.setLevel(level)
-    ch = logging.StreamHandler(sys.stdout)
+    fh = logging.FileHandler(filename=args.log, mode='w')
+    fh.setLevel(level)
+    logger.addHandler(fh)
 
-    # Set up logging to file, if specified
-    if args.log:
-        fh = logging.FileHandler(filename=args.log, mode='w')
-        fh.setLevel(level)
-        logger.addHandler(fh)
-        ch.setLevel(logging.WARN) # only WARN on stdout when using a file
-    else :
-        ch.setLevel(level)  # else send everything to stdout
-
-    logger.addHandler(ch)
-
+    logger.info("\nStarting verification: {}".format(datetime.now()))
     # Create configuration object and setup import/export iterators
-    config = Config(args.configfile, args.user)
+    config = Config(args.configfile, args.user, logger)
     if config.mode == 'export':
         trees = [FcrepoWalker(config.repo, args.user, logger)]
     elif config.mode == 'import':
         trees = [LocalWalker(config.bin, logger), LocalWalker(config.desc, logger)]
 
-    logger.info("Running verification on Fedora 4 {0}".format(config.mode))
-    counter = 1
+    logger.info("\nRunning verification on Fedora 4 {0}".format(config.mode))
+    print("\nRunning verification on Fedora 4 {0}".format(config.mode))
 
+    counter = 1
 
     # Step through each iterator and verify resources
     for walker in trees:
@@ -376,9 +377,27 @@ def main():
                                             len(destination.graph)
                                             ))
 
+                # always tell user if something doesn't match
+                if not verified:
+                    print('\nWARN: Resource Mismatch \'{}\''.format(original.relpath));
+
                 # If verbose flag is set, print full resource details to screen/file
                 if args.verbose:
-                    logger.info("\nRESOURCE {0}: {1} {2}".format(
+                    print("\nRESOURCE {0}: {1} {2}".format(
+                          counter, original.location, original.type
+                          ))
+                    print("  rel  => {}".format(original.relpath))
+                    print("  orig => {}".format(original.origpath))
+                    print("  dest => {}".format(original.destpath))
+                    print("  Verifying original to copy... {0} -- {1}".format(
+                         verified, verification))
+                else:
+                    # Display a simple counter
+                    print("Checked {0} resources...".format(counter), end='\r')
+
+                if not verified:
+                    logger.warn('\nWARN: Resource Mismatch \'{}\''.format(original.relpath));
+                    logger.info("RESOURCE {0}: {1} {2}".format(
                           counter, original.location, original.type
                           ))
 
@@ -388,12 +407,6 @@ def main():
                     logger.info("  Verifying original to copy... {0} -- {1}".format(
                          verified, verification))
 
-                if not verified:
-                    logger.warn('WARN: Resource Mismatch {}'.format(original.relpath));
-
-
-                # Display a simple counter
-                print("Checked {0} resources...".format(counter), end='\r')
 
                 # If a CSV summary file has been specified, write results there
                 if args.csv:
@@ -409,7 +422,8 @@ def main():
                 counter += 1
 
     # Clear the resource counter display
-    logger.info('')
+    print('')
+    logger.info("Verified {} resources".format(counter-1))
 
     if args.csv:
         csvfile.close()
