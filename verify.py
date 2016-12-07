@@ -298,7 +298,7 @@ def main():
                         DEBUG, ERROR)''',
                         action='store',
                         required=False,
-                        default='WARN'
+                        default='INFO'
                         )
     parser.add_argument('-v', '--verbose',
                         help='''Show detailed info for each resource checked''',

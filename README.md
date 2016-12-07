@@ -34,7 +34,7 @@ Information about errors or discrepancies found will be output to the log file a
 screen.  To have the tool output information about each resource being examined include the `-v` flag.
 Information about each resource being looked at will then be sent to standard out.
 
-The default log level for the log file is `WARN` and the default log file is `./verify_output.txt`
+The default log level for the log file is `INFO` and the default log file is `./verify_output.txt`
 
 A CSV file can be created.  It will contain information about each resource and how it compared
 to it's counterpart in the other system.
